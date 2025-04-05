@@ -1,4 +1,4 @@
-name: Build Kernel Template (Cannot be used for compilation directly)
+name: Build Kernel for A92s ColorOS 12.1 MT6873 Android 12
 on:
   workflow_call:
   workflow_dispatch:
@@ -12,7 +12,7 @@ env:
   PROFILE_NAME: "pdkm00_coloros12.1.env" # your profile name.
   KERNELSU_SUS_PATCH: "false" # if u need manual susfs patch to kernelsu.
   GENERATE_DTB: "false" # if u kernel need DTB , but cannot auto generate it. (Only Anykernel3).
-  GENERATE_CHIP: "qcom" # only supported for qcom and mediatek.
+  GENERATE_CHIP: "mediatek" # only supported for qcom and mediatek.
   BUILD_DEBUGGER: "false" # Output build errors.
   BUILD_OTHER_CONFIG: "false" # Merge config files.
 
@@ -242,10 +242,10 @@ jobs:
             echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
           fi
           if [[ "${{ env.LXC_ENABLE }}" == "true" ]]; then
-           echo "CONFIG_VIRTUALIZATION=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-           echo "CONFIG_KVM=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-           echo "CONFIG_VHOST_NET=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-           echo "CONFIG_VHOST_CROSS_ENDIAN_LEGACY=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+           echo "CONFIG_VIRTUALIZATION=y" >> android-kernel/arch/${{ env.ARCH }}configs/${{ env.KERNEL_CONFIG }}
+           echo "CONFIG_KVM=y" >> android-kernel/arch/${{ env.ARCH }}configs/${{ env.KERNEL_CONFIG }}
+           echo "CONFIG_VHOST_NET=y" >> android-kernel/arch/${{ env.ARCH }}configs/${{ env.KERNEL_CONFIG }}
+           echo "CONFIG_VHOST_CROSS_ENDIAN_LEGACY=y" >> android-kernel/arch/${{ env.ARCH }}configs/${{ env.KERNEL_CONFIG }}
           fi
 
       - name: Set Pack Method and KernelSU and SUSFS
@@ -290,7 +290,7 @@ jobs:
             false
           fi
           echo "KERNELSU_METHOD=${{ env.KERNELSU_METHOD }}" >> $GITHUB_ENV
-          KSU_VERSION=$(cd KernelSU && expr $(/usr/bin/git rev-list --count HEAD) + 10200 || echo 10200)
+          KSU_VERSION=$(cd ${{ env.KERNELSU_NAME }} && expr $(/usr/bin/git rev-list --count HEAD) + 10200)
           echo "UPLOADNAME=-${{ env.KERNELSU_NAME }}_$KSU_VERSION" >> $GITHUB_ENV
 
           ## KPM Checker
@@ -494,24 +494,15 @@ jobs:
           MERGE_CONFIG_FILES=("vendor/debugfs.config" "vendor/lahaina_QGKI.config")
           export PATH=$GITHUB_WORKSPACE/clang-custom/bin:$PATH
           cd $GITHUB_WORKSPACE/device_kernel/
-          
-          # 修改堆栈保护器配置
-          sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/' ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          echo "CONFIG_CC_STACKPROTECTOR=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          
-          # 强制使用LLVM集成汇编器，禁用GNU汇编器
-          sed -i 's/CONFIG_AS_VERSION=.*/CONFIG_AS_VERSION=0/' ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          echo "CONFIG_LLVM_POLLY=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          
           if [ -z "${{ env.GCC_32 }}" ] && [ -z "${{ env.GCC_64 }}" ]; then
-            make CC="ccache clang" AS="llvm-as" LD="ld.lld" AR="llvm-ar" NM="llvm-nm" STRIP="llvm-strip" OBJCOPY="llvm-objcopy" OBJDUMP="llvm-objdump" READELF="llvm-readelf" HOSTCC="clang" HOSTCXX="clang++" HOSTAR="llvm-ar" HOSTLD="ld.lld" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} LLVM=1 LLVM_IAS=1 ${{ env.EXTRA_CMDS }} ${{ env.DEFCONFIG_NAME }}
+            make CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.DEFCONFIG_NAME }}
             if [[ "${{ env.BUILD_OTHER_CONFIG }}"  == "true" ]]; then
                 for FILES in "${MERGE_CONFIG_FILES[@]}"; do
                     ./scripts/kconfig/merge_config.sh -O out/ -m out/.config arch/arm64/configs/$FILES
                 done
-                make CC="ccache clang" AS="llvm-as" LD="ld.lld" AR="llvm-ar" NM="llvm-nm" STRIP="llvm-strip" OBJCOPY="llvm-objcopy" OBJDUMP="llvm-objdump" READELF="llvm-readelf" HOSTCC="clang" HOSTCXX="clang++" HOSTAR="llvm-ar" HOSTLD="ld.lld" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} LLVM=1 LLVM_IAS=1 ${{ env.EXTRA_CMDS }} olddefconfig
+                make CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} olddefconfig
             fi
-            make -j$(nproc --all) CC="ccache clang" AS="llvm-as" LD="ld.lld" AR="llvm-ar" NM="llvm-nm" STRIP="llvm-strip" OBJCOPY="llvm-objcopy" OBJDUMP="llvm-objdump" READELF="llvm-readelf" HOSTCC="clang" HOSTCXX="clang++" HOSTAR="llvm-ar" HOSTLD="ld.lld" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} LLVM=1 LLVM_IAS=1 ${{ env.EXTRA_CMDS }}
+            make -j$(nproc --all) CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }}
           elif [ -z "${{ env.GCC_32 }}" ]; then
             make O=out ARCH=arm64 ${{ env.GCC_64 }} ${{ env.DEFCONFIG_NAME }}
             if [[ "${{ env.BUILD_OTHER_CONFIG }}"  == "true" ]]; then
