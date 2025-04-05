@@ -1,4 +1,4 @@
-name: Build Kernel for A92s ColorOS 12.1 MT6873 Android 12
+name: Build Kernel Template (Cannot be used for compilation directly)
 on:
   workflow_call:
   workflow_dispatch:
