@@ -499,15 +499,19 @@ jobs:
           sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/' ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
           echo "CONFIG_CC_STACKPROTECTOR=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
           
+          # 强制使用LLVM集成汇编器，禁用GNU汇编器
+          sed -i 's/CONFIG_AS_VERSION=.*/CONFIG_AS_VERSION=0/' ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+          echo "CONFIG_LLVM_POLLY=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+          
           if [ -z "${{ env.GCC_32 }}" ] && [ -z "${{ env.GCC_64 }}" ]; then
-            make CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.DEFCONFIG_NAME }}
+            make CC="ccache clang" AS="llvm-as" LD="ld.lld" AR="llvm-ar" NM="llvm-nm" STRIP="llvm-strip" OBJCOPY="llvm-objcopy" OBJDUMP="llvm-objdump" READELF="llvm-readelf" HOSTCC="clang" HOSTCXX="clang++" HOSTAR="llvm-ar" HOSTLD="ld.lld" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} LLVM=1 LLVM_IAS=1 ${{ env.EXTRA_CMDS }} ${{ env.DEFCONFIG_NAME }}
             if [[ "${{ env.BUILD_OTHER_CONFIG }}"  == "true" ]]; then
                 for FILES in "${MERGE_CONFIG_FILES[@]}"; do
                     ./scripts/kconfig/merge_config.sh -O out/ -m out/.config arch/arm64/configs/$FILES
                 done
-                make CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} olddefconfig
+                make CC="ccache clang" AS="llvm-as" LD="ld.lld" AR="llvm-ar" NM="llvm-nm" STRIP="llvm-strip" OBJCOPY="llvm-objcopy" OBJDUMP="llvm-objdump" READELF="llvm-readelf" HOSTCC="clang" HOSTCXX="clang++" HOSTAR="llvm-ar" HOSTLD="ld.lld" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} LLVM=1 LLVM_IAS=1 ${{ env.EXTRA_CMDS }} olddefconfig
             fi
-            make -j$(nproc --all) CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }}
+            make -j$(nproc --all) CC="ccache clang" AS="llvm-as" LD="ld.lld" AR="llvm-ar" NM="llvm-nm" STRIP="llvm-strip" OBJCOPY="llvm-objcopy" OBJDUMP="llvm-objdump" READELF="llvm-readelf" HOSTCC="clang" HOSTCXX="clang++" HOSTAR="llvm-ar" HOSTLD="ld.lld" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} LLVM=1 LLVM_IAS=1 ${{ env.EXTRA_CMDS }}
           elif [ -z "${{ env.GCC_32 }}" ]; then
             make O=out ARCH=arm64 ${{ env.GCC_64 }} ${{ env.DEFCONFIG_NAME }}
             if [[ "${{ env.BUILD_OTHER_CONFIG }}"  == "true" ]]; then
