@@ -494,6 +494,11 @@ jobs:
           MERGE_CONFIG_FILES=("vendor/debugfs.config" "vendor/lahaina_QGKI.config")
           export PATH=$GITHUB_WORKSPACE/clang-custom/bin:$PATH
           cd $GITHUB_WORKSPACE/device_kernel/
+          
+          # 修改堆栈保护器配置
+          sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/' ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+          echo "CONFIG_CC_STACKPROTECTOR=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+          
           if [ -z "${{ env.GCC_32 }}" ] && [ -z "${{ env.GCC_64 }}" ]; then
             make CC="ccache clang" O=out ARCH=arm64 ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.DEFCONFIG_NAME }}
             if [[ "${{ env.BUILD_OTHER_CONFIG }}"  == "true" ]]; then
