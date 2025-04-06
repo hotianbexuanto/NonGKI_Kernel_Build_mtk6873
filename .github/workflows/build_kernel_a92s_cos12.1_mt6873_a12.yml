@@ -15,6 +15,11 @@ env:
   GENERATE_CHIP: "mediatek" # only supported for qcom and mediatek.
   BUILD_DEBUGGER: "false" # Output build errors.
   BUILD_OTHER_CONFIG: "false" # Merge config files.
+  KERNELSU_SOURCE: https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh
+  KERNELSU_BRANCH: susfs-dev
+  KERNELSU_NAME: KernelSU
+  SUSFS_ENABLE: false
+  SUSFS_FIXED: false
 
 
 jobs:
@@ -224,7 +229,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/device_kernel
           echo "CONFIG_KSU=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          if [[ "${{ env.SUSFS_ENABLE }}" == "true" ]]; then
+          if [[ "${{ env.SUSFS_ENABLE }}" == "false" ]]; then
             echo "CONFIG_KSU_SUSFS=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
             echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
             echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
